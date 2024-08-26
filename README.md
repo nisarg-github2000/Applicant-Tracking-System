@@ -21,7 +21,7 @@ Applicant Tracking System (ATS) is built using the Gemini Pro LLM model for natu
 ## Installation:
 Clone the repository:
 ```
-git clone
+git clone https://github.com/nisarg-github2000/Applicant-Tracking-System.git
 ```
 Navigate to the project directory:
 ```
@@ -46,6 +46,10 @@ Run the Streamlit application:
 streamlit run app.py
 ```
 Access the application through your web browser using the provided local address.
+
+## Results
+
+
 
 ## Contributing 🤝
 Contributions are welcome! If you have any suggestions, enhancements, or bug fixes, feel free to open an issue or submit a pull request.
