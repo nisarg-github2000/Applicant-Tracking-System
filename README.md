@@ -39,17 +39,15 @@ Install the required dependencies:
 ```
 pip install -r requirements.txt
 ```
-Ensure all dependencies are installed.
-
+Make a .env file and add your Google Gemini API Key to the file
+```
+GOOGLE_API_KEY="your_key"
+```
 Run the Streamlit application:
 ```
 streamlit run app.py
 ```
 Access the application through your web browser using the provided local address.
-
-## Results
-
-
 
 ## Contributing 🤝
 Contributions are welcome! If you have any suggestions, enhancements, or bug fixes, feel free to open an issue or submit a pull request.
