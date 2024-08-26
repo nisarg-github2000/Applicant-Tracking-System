@@ -1,13 +1,9 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-import json
-import requests
 import docx2txt
 import PyPDF2 as pdf
 from dotenv import load_dotenv
-from streamlit_lottie import st_lottie
-import time
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -18,7 +14,7 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Set up the model configuration for text generation
 generation_config = {
-    "temperature": 0.4,
+    "temperature": 0.3,
     "top_p": 1,
     "top_k": 32,
     "max_output_tokens": 4096,
@@ -62,32 +58,20 @@ with profound knowledge in technology, software engineering, data science, full 
 cloud developers, devops engineer and big data engineering, your role involves evaluating resumes against job descriptions.
 Recognizing the competitive job market, provide top-notch assistance for resume improvement.
 Your goal is to analyze the resume against the given job description, 
-assign a percentage match based on key criteria, and pinpoint missing keywords accurately.
+assign a percentage match based on key criteria, and pinpoint missing and matching keywords accurately.
 resume:{text}
 description:{job_description}
 I want the response in one single string having the structure
-{{"Job Description Match":"%","Missing Keywords":"","Candidate Summary":"","Experience":""}}
+{{"Job Description Match":"%","Missing Keywords":"","Matching Keywords":"","Candidate Summary":""}}
 """
 
 # Streamlit app
 # Initialize Streamlit app
 
-def load_lottiefile(filepath: str):
-    with open(filepath, "r") as f:
-        return json.load(f)
-    
-def load_lottieurl(url: str):
-    r = requests.get(url)
-    if r.status_code != 200: 
-        return None
-    return r.json() 
-
-lottie_checking = load_lottiefile("assests/checking.json")
-
 st.set_page_config(page_title="ATS Resume Pro")
 
-st.title("Track My Resume" + ":sunglasses:")
-st.markdown('<style>h1{color: orange; text-align: center; font-family:POPPINS}</style>', unsafe_allow_html=True)
+st.title("Applicant Tracking System")
+st.markdown('<style>h1{color: white; text-align: center; font-family:POPPINS}</style>', unsafe_allow_html=True)
 
 st.text(" \n")
 st.text(" \n")
@@ -114,7 +98,7 @@ with col1:
 with col2:
     submit_button1 = st.button("Check Score")
 with col3:
-    submit_button2 = st.button("How it Works?")
+    submit_button2 = st.button("Keywords")
 
 if submit_button:   
     
@@ -122,15 +106,6 @@ if submit_button:
         st.text(" \n")
         st.text(" \n")
         st.text(" \n")  
-        st.lottie(
-            lottie_checking,
-            speed=1,
-            loop=True,
-            quality="low",
-            height="200px",
-            width="200px",
-            key=None,
-        )
         if uploaded_file.type == "application/pdf":
             resume_text = extract_text_from_pdf_file(uploaded_file)
         elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -162,15 +137,6 @@ if submit_button:
     
 elif submit_button1:  
     if uploaded_file is not None:
-        st.lottie(
-            lottie_checking,
-            speed=1,
-            loop=True,
-            quality="low",
-            height="200px",
-            width="200px",
-            key=None,
-        ) 
         if uploaded_file.type == "application/pdf":
             resume_text = extract_text_from_pdf_file(uploaded_file)
         elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -187,18 +153,38 @@ elif submit_button1:
         st.text(" \n")
         st.text(" \n")
         st.markdown('<h6 style="color: red;text-align: center;">Please upload your Resume!</h6>', unsafe_allow_html=True)        
-    
+
 elif submit_button2:
-    st.lottie(
-            lottie_checking,
-            speed=1,
-            loop=True,
-            quality="low",
-            height="200px",
-            width="200px",
-            key=None,
-        ) 
+    if uploaded_file is not None:
+        if uploaded_file.type == "application/pdf":
+            resume_text = extract_text_from_pdf_file(uploaded_file)
+        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            resume_text = extract_text_from_docx_file(uploaded_file)
+        response_text = generate_response_from_gemini(input_prompt_template.format(text=resume_text, job_description=job_description))
+        
+        missing_keywords = response_text.split('"Missing Keywords":"')[1].split('"')[0]
+        # Split the keywords by commas and format them in point form
+        missing_keywords_list = missing_keywords.split(',')
+        formatted_missing_keywords = '\n'.join([f"- {keyword.strip()}" for keyword in missing_keywords_list])  
+        
+        matching_keywords = response_text.split('"Matching Keywords":"')[1].split('"')[0]
+        # Split the keywords by commas and format them in point form
+        matching_keywords_list = matching_keywords.split(',')
+        formatted_matching_keywords = '\n'.join([f"- {keyword.strip()}" for keyword in matching_keywords_list]) 
+        
+        # candidate_summary = response_text.split('"Candidate Summary":"')[1].split('"')[0]
+        
+        st.markdown('<h3 style="color: yellow; text-align: left;">Keywords Summary</h3>', unsafe_allow_html=True)
+        
+        st.write(f"<div style='text-align:left; font-family: sans-serif; font-size: 20px;'>Missing Keywords:\n {formatted_missing_keywords}</div> \n", unsafe_allow_html=True) 
+        st.write(f"<div style='text-align:left; font-family: sans-serif; font-size: 20px;'>Matching Keywords:\n {formatted_matching_keywords}</div> \n", unsafe_allow_html=True)
+        # st.write(f"<div style='text-align:left; font-family: sans-serif; font-size: 20px;'>Candidate Summary:\n {candidate_summary}</div>", unsafe_allow_html=True)
+    else:
+        st.text(" \n")
+        st.text(" \n")
+        st.markdown('<h6 style="color: red;text-align: center;">Please upload your Resume!</h6>', unsafe_allow_html=True)
     
+        
     
 st.text(" \n")
 st.text(" \n")
@@ -239,7 +225,7 @@ text-align: center;
 }
 </style>
 <div class="footer">
-<p>Developed with ❤ by<a style='display: block; text-align: center;' href="https://github.com/Gitesh08" target="_blank">Gitesh Mahadik</a></p>
+<p>Developed with ❤ by<a style='display: block; text-align: center;' href="https://github.com/nisarg-github2000" target="_blank">Nisarg Oza</a></p>
 </div>
 """
 st.markdown(footer,unsafe_allow_html=True)
